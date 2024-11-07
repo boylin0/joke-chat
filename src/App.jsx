@@ -10,13 +10,20 @@ import {
 import CircleIcon from '@mui/icons-material/Circle';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import PropTypes from 'prop-types'
+import MuiMarkdown from 'mui-markdown';
+import { Highlight, themes } from 'prism-react-renderer';
 
 function ChatBox({ chats }) {
   return (
     <Box>
       {chats.map((chat, index) => (
         <Box key={index} sx={{ marginBottom: 2 }}>
-          <strong>{chat.type === 'ai' ? 'AI' : 'User'}:</strong> {chat.content}
+          <strong>{chat.type === 'ai' ? 'AI' : 'User'}:</strong>
+          <MuiMarkdown
+            Highlight={Highlight}
+            theme={themes}
+            prismTheme={themes.github}
+          >{chat.content}</MuiMarkdown>
         </Box>
       ))}
     </Box>
