@@ -35,6 +35,10 @@ function ChatBox({ chats }) {
     </Box>
   )
 
+  AiMessageBox.propTypes = {
+    chatContent: PropTypes.string.isRequired,
+  };
+
   const UserMessageBox = ({ chatContent }) => (
 
     <Box sx={{
@@ -59,18 +63,25 @@ function ChatBox({ chats }) {
     </Box>
   )
 
+  UserMessageBox.propTypes = {
+    chatContent: PropTypes.string.isRequired,
+  };
+
   return (
-    <>
+    <Box sx={{ pb: '100px' }}>
       {chats.map((chat, index) => (
         <Box key={index} sx={{ marginBottom: 2 }}>
-          {chat.type === 'ai' ? (
+          {
+          chat.type === 'ai' ? (
             <AiMessageBox chatContent={chat.content} />
-          ) : (
+          ) :  chat.type === 'human' ? (
             <UserMessageBox chatContent={chat.content} />
+          ) : (
+            null
           )}
         </Box>
       ))}
-    </>
+    </Box>
   )
 }
 
@@ -136,7 +147,7 @@ function Status({ websocket }) {
   }, [websocket])
 
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+    <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'center' }}>
       <Box sx={{ mx: 1 }}>Status: {status}</Box>
       <CircleIcon sx={{ color: websocket ? 'green' : 'red' }} />
     </Box>
@@ -183,6 +194,8 @@ function App() {
         }
         g_chats = newChats
         setChats(newChats)
+        // scroll to bottom
+        window.scrollTo(0, document.body.scrollHeight)
       }
     }
   }, [])
@@ -198,7 +211,7 @@ function App() {
     <ThemeProvider theme={muiTheme}>
       <CssBaseline />
       <Container>
-        <Typography variant="h4" component="h1" gutterBottom>
+        <Typography variant="h4" component="h1" gutterBottom sx={{ p:3}} textAlign={'center'}>
           AskChat
         </Typography>
         <Status websocket={websocket} />

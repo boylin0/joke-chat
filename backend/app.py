@@ -31,8 +31,8 @@ async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     await websocket.send_json({"type": "init"})
     chats = [
-        { "type": "ai", "content": "Hello! I am a helpful assistant that can answer questions." },
-        { "type": "user", "content": "Chat with me!" },
+        { "type": "system", "content": "Your name is AABLLM, you speaks traditional Chinese in Taiwan." },
+        { "type": "ai", "content": "問我問題吧！" },
     ]
     await websocket.send_json({"type": "get-chats", "chats": chats})
     while True:
@@ -42,10 +42,13 @@ async def websocket_endpoint(websocket: WebSocket):
             logging.warning("Connection closed.")
             break
         type = data["type"]
+
         if type == "set-chats":
             chats = data["chats"]
+
         if type == "get-chats":
             await websocket.send_json({"type": "get-chats", "chats": chats})
+
         if type == "send-message":
             prompt = data["prompt"]
             chats.append({ "type": "human", "content": prompt })
@@ -62,8 +65,9 @@ async def websocket_endpoint(websocket: WebSocket):
             except Exception as e:
                 logging.error(e)
                 await websocket.send_json({"type": "llm-chunk", "content": "I am out of resources. Please try again later."})
-                await websocket.send_json({"type": "get-chats", "chats": chats})
                 break
+            finally:
+                await websocket.send_json({"type": "get-chats", "chats": chats})
 
 # serve dist vite project
 #@app.get("/", response_class=HTMLResponse)
