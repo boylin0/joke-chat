@@ -32,6 +32,7 @@ async def websocket_endpoint(websocket: WebSocket):
     await websocket.send_json({"type": "init"})
     chats = [
         { "type": "ai", "content": "Hello! I am a helpful assistant that can answer questions." },
+        { "type": "user", "content": "Chat with me!" },
     ]
     await websocket.send_json({"type": "get-chats", "chats": chats})
     while True:

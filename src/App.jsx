@@ -8,25 +8,69 @@ import {
   Typography,
 } from '@mui/material'
 import CircleIcon from '@mui/icons-material/Circle';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { ThemeProvider } from '@mui/material/styles';
 import PropTypes from 'prop-types'
 import MuiMarkdown from 'mui-markdown';
 import { Highlight, themes } from 'prism-react-renderer';
+import muiTheme from './theme';
 
 function ChatBox({ chats }) {
+
+  const AiMessageBox = ({ chatContent }) => (
+    <Box sx={{
+      backgroundColor: 'rgba(255, 255, 255, 0.5)',
+      borderRadius: 8,
+      padding: 2,
+      px: 3,
+      marginBottom: 2,
+      wordBreak: 'break-word',
+    }}>
+      <MuiMarkdown
+        Highlight={Highlight}
+        theme={themes}
+        prismTheme={themes.github}
+      >
+        {chatContent}
+      </MuiMarkdown>
+    </Box>
+  )
+
+  const UserMessageBox = ({ chatContent }) => (
+
+    <Box sx={{
+      backgroundColor: 'rgba(0, 0, 0, 0.1)',
+      borderRadius: 8,
+      padding: 2,
+      px: 3,
+      marginBottom: 2,
+      wordBreak: 'break-word',
+      textAlign: 'right',
+      alignItems: 'flex-end',
+      justifyContent: 'flex-end',
+      display: 'flex',
+    }}>
+      <MuiMarkdown
+        Highlight={Highlight}
+        theme={themes}
+        prismTheme={themes.github}
+      >
+        {chatContent}
+      </MuiMarkdown>
+    </Box>
+  )
+
   return (
-    <Box>
+    <>
       {chats.map((chat, index) => (
         <Box key={index} sx={{ marginBottom: 2 }}>
-          <strong>{chat.type === 'ai' ? 'AI' : 'User'}:</strong>
-          <MuiMarkdown
-            Highlight={Highlight}
-            theme={themes}
-            prismTheme={themes.github}
-          >{chat.content}</MuiMarkdown>
+          {chat.type === 'ai' ? (
+            <AiMessageBox chatContent={chat.content} />
+          ) : (
+            <UserMessageBox chatContent={chat.content} />
+          )}
         </Box>
       ))}
-    </Box>
+    </>
   )
 }
 
@@ -48,18 +92,30 @@ function PromptInput({ prompt, setPrompt, handleSend, disabled }) {
   };
 
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', marginTop: 2 }}>
-      <TextField
-        fullWidth
-        variant="outlined"
-        value={prompt}
-        onChange={(e) => setPrompt(e.target.value)}
-        onKeyUp={handleKeyPress}
-        placeholder="Type your message..."
-      />
-      <Button variant="contained" color="primary" onClick={handleSend} sx={{ marginLeft: 2 }} disabled={!prompt || disabled}>
-        Send
-      </Button>
+    <Box sx={{
+      display: 'flex',
+      alignItems: 'center',
+      position: 'fixed',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      padding: 2,
+      backdropFilter: 'blur(10px)',
+      boxShadow: '0 -2px 5px rgba(0,0,0,0.1)'
+    }}>
+      <Container maxWidth="md" sx={{ display: 'flex', alignItems: 'center' }}>
+        <TextField
+          fullWidth
+          variant="outlined"
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          onKeyUp={handleKeyPress}
+          placeholder="Type your message..."
+        />
+        <Button variant="contained" color="primary" onClick={handleSend} sx={{ marginLeft: 2 }} disabled={!prompt || disabled}>
+          Send
+        </Button>
+      </Container>
     </Box>
   )
 }
@@ -138,22 +194,10 @@ function App() {
     )
   }
 
-  const theme = createTheme({
-    palette: {
-      mode: 'dark',
-      primary: {
-        main: '#1976d2',
-      },
-      secondary: {
-        main: '#dc004e',
-      },
-    },
-  });
-
   return (
-    <ThemeProvider theme={theme}>
+    <ThemeProvider theme={muiTheme}>
+      <CssBaseline />
       <Container>
-        <CssBaseline />
         <Typography variant="h4" component="h1" gutterBottom>
           AskChat
         </Typography>
