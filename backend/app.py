@@ -1,5 +1,5 @@
 from fastapi import FastAPI, WebSocket
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from langchain_google_genai import ChatGoogleGenerativeAI
 import os
@@ -24,7 +24,7 @@ app = FastAPI()
 
 @app.get("/ws")
 async def get():
-    return "Hello"
+    return JSONResponse({"message": "This is a websocket endpoint. You should connect to it using a websocket client."})
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
