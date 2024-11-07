@@ -1,24 +1,8 @@
 from fastapi import FastAPI, WebSocket
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from langchain_google_genai import ChatGoogleGenerativeAI
-import os
 import logging
-import dotenv
-
-dotenv.load_dotenv()
-
-if "GOOGLE_API_KEY" not in os.environ:
-    logging.error("GOOGLE_API_KEY not set.")
-    exit(1)
-
-llm = ChatGoogleGenerativeAI(
-    model="gemini-1.5-flash",
-    temperature=0,
-    max_tokens=None,
-    timeout=None,
-    max_retries=2,
-)
+import llmlib as llmlib
 
 app = FastAPI()
 
@@ -28,13 +12,27 @@ async def get():
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
+    
+    llm = llmlib.get_llm()
+
     await websocket.accept()
-    await websocket.send_json({"type": "init"})
+    
+    # 預設對話
     chats = [
-        { "type": "system", "content": "Your name is AABLLM, you speaks traditional Chinese in Taiwan." },
+        { 
+            "type": "system", 
+            "content": 
+            """
+            Your name is Funny, you speaks traditional Chinese in Taiwan.
+            You are very funny and you like to make jokes.
+            every time you speak, you will make a joke.
+            you should speak only in traditional Chinese even i ask you in other language.
+            """ 
+        },
         { "type": "ai", "content": "問我問題吧！" },
     ]
     await websocket.send_json({"type": "get-chats", "chats": chats})
+
     while True:
         try:
             data = await websocket.receive_json()
@@ -64,8 +62,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 await websocket.send_json({"type": "get-chats", "chats": chats})
             except Exception as e:
                 logging.error(e)
-                await websocket.send_json({"type": "llm-chunk", "content": "I am out of resources. Please try again later."})
-                break
+                chats[-1]["content"] += f"\n\n{e}"
             finally:
                 await websocket.send_json({"type": "get-chats", "chats": chats})
 
