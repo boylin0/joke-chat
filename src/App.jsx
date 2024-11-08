@@ -10,81 +10,26 @@ import {
 import CircleIcon from '@mui/icons-material/Circle';
 import { ThemeProvider } from '@mui/material/styles';
 import PropTypes from 'prop-types'
-import MuiMarkdown from 'mui-markdown';
-import { Highlight, themes } from 'prism-react-renderer';
 import muiTheme from './theme';
+import { useMemo } from 'react';
+
+import MessageBox from './components/MessageBox';
 
 function ChatBox({ chats }) {
 
-  const AiMessageBox = ({ chatContent }) => (
-    <Box sx={{
-      backgroundColor: 'rgba(255, 255, 255, 0.5)',
-      borderRadius: 8,
-      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-      padding: 2,
-      px: 3,
-      marginBottom: 2,
-      wordBreak: 'break-word',
-    }}>
-      <MuiMarkdown
-        Highlight={Highlight}
-        theme={themes}
-        prismTheme={themes.github}
-      >
-        {chatContent}
-      </MuiMarkdown>
-    </Box>
-  )
-
-  AiMessageBox.propTypes = {
-    chatContent: PropTypes.string.isRequired,
-  };
-
-  const UserMessageBox = ({ chatContent }) => (
-
-    <Box sx={{
-      backgroundColor: 'rgba(0, 0, 0, 0.1)',
-      borderRadius: 8,
-      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-      padding: 2,
-      px: 3,
-      marginBottom: 2,
-      wordBreak: 'break-word',
-      textAlign: 'right',
-      alignItems: 'flex-end',
-      justifyContent: 'flex-end',
-      display: 'flex',
-    }}>
-      <MuiMarkdown
-        Highlight={Highlight}
-        theme={themes}
-        prismTheme={themes.github}
-      >
-        {chatContent}
-      </MuiMarkdown>
-    </Box>
-  )
-
-  UserMessageBox.propTypes = {
-    chatContent: PropTypes.string.isRequired,
-  };
+  const renderedChats = useMemo(() => (
+    chats.map((chat, index) => (
+      <Box key={index} sx={{ marginBottom: 2 }}>
+        <MessageBox type={chat.type} chatContent={chat.content} />
+      </Box>
+    ))
+  ), [chats]);
 
   return (
     <Box sx={{ pb: '100px' }}>
-      {chats.map((chat, index) => (
-        <Box key={index} sx={{ marginBottom: 2 }}>
-          {
-            chat.type === 'ai' ? (
-              <AiMessageBox chatContent={chat.content} />
-            ) : chat.type === 'human' ? (
-              <UserMessageBox chatContent={chat.content} />
-            ) : (
-              null
-            )}
-        </Box>
-      ))}
+      {renderedChats}
     </Box>
-  )
+  );
 }
 
 ChatBox.propTypes = {
@@ -99,10 +44,14 @@ ChatBox.propTypes = {
 function PromptInput({ prompt, setPrompt, handleSend, disabled }) {
 
   const handleKeyPress = (event) => {
-    if (event.code === 'Enter' && prompt.trim() === '' && !event.shiftKey) {
+    const isEnter = (event.code === 'Enter' || event.code === 'NumpadEnter');
+    if (isEnter && prompt.trim() === '' && !event.shiftKey) {
       event.preventDefault();
     }
-    if (event.code === 'Enter' && !event.shiftKey && !disabled && prompt.trim() !== '') {
+    if (isEnter && event.shiftKey) {
+      return;
+    }
+    if (isEnter && !event.shiftKey && !disabled && prompt.trim() !== '') {
       event.preventDefault();
       handleSend();
     }
