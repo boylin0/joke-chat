@@ -38,16 +38,18 @@ ChatBox.propTypes = {
 function PromptInput({ prompt, setPrompt, handleSend, disabled }) {
 
   const handleKeyPress = (event) => {
+    const promptText = event.target.value;
     const isEnter = (event.code === 'Enter' || event.code === 'NumpadEnter');
-    if (isEnter && prompt.trim() === '' && !event.shiftKey) {
+    if (isEnter && promptText.trim() === '' && !event.shiftKey) {
       event.preventDefault();
     }
     if (isEnter && event.shiftKey) {
       return;
     }
-    if (isEnter && !event.shiftKey && !disabled && prompt.trim() !== '') {
-      event.preventDefault();
+    if (isEnter && !event.shiftKey && !disabled && promptText.trim() !== '') {
+      setPrompt('')
       handleSend();
+      event.preventDefault();
     }
   };
 
@@ -69,7 +71,7 @@ function PromptInput({ prompt, setPrompt, handleSend, disabled }) {
           variant="outlined"
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          onKeyDown={handleKeyPress}
+          onKeyDownCapture={handleKeyPress}
           placeholder="Type your message..."
           multiline
           minRows={1}
@@ -148,7 +150,6 @@ function App() {
       if (type === 'get-chats') {
         g_chats = data.chats
         setChats(data.chats)
-        window.scrollTo(0, document.body.scrollHeight, { behavior: 'smooth' })
       } else if (type === 'llm-chunk') {
         const content = data.content
         let newChats = [...g_chats]
@@ -160,14 +161,15 @@ function App() {
         }
         g_chats = newChats
         setChats(newChats)
-        // scroll to bottom
-        window.scrollTo(0, document.body.scrollHeight, { behavior: 'smooth' })
       }
     }
   }
 
+  useEffect(() => {
+    window.scrollTo(0, document.body.scrollHeight, { behavior: 'smooth' })
+  }, [chats])
+
   const handleSend = () => {
-    setPrompt('')
     websocket.send(
       JSON.stringify({ type: 'send-message', prompt: prompt })
     )
