@@ -11,23 +11,17 @@ import CircleIcon from '@mui/icons-material/Circle';
 import { ThemeProvider } from '@mui/material/styles';
 import PropTypes from 'prop-types'
 import muiTheme from './theme';
-import { useMemo } from 'react';
 
 import MessageBox from './components/MessageBox';
 
 function ChatBox({ chats }) {
-
-  const renderedChats = useMemo(() => (
-    chats.map((chat, index) => (
-      <Box key={index} sx={{ marginBottom: 2 }}>
-        <MessageBox type={chat.type} chatContent={chat.content} />
-      </Box>
-    ))
-  ), [chats]);
-
   return (
     <Box sx={{ pb: '100px' }}>
-      {renderedChats}
+      {chats.map((chat, index) => (
+        <Box key={index} sx={{ marginBottom: 2 }}>
+          <MessageBox type={chat.type} chatContent={chat.content} />
+        </Box>
+      ))}
     </Box>
   );
 }

@@ -49,18 +49,18 @@ const UserMessageBox = memo(({ type, chatContent }) => {
     })
 
     return (<Box sx={msgBoxStyle.sx}
-        component={motion.div}
-        initial={msgBoxStyle.initial}
-        animate={msgBoxStyle.animate}
-        transition={msgBoxStyle.transition}
+      component={motion.div}
+      initial={msgBoxStyle.initial}
+      animate={msgBoxStyle.animate}
+      transition={msgBoxStyle.transition}
     >
-        <MuiMarkdown
-            Highlight={Highlight}
-            theme={themes}
-            prismTheme={themes.github}
+      <MuiMarkdown
+        Highlight={Highlight}
+        theme={themes}
+        prismTheme={themes.github}
         >
-            {chatContent}
-        </MuiMarkdown>
+        {chatContent}
+      </MuiMarkdown>
     </Box>
     )
 });
