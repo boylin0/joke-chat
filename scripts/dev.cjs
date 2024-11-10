@@ -1,23 +1,44 @@
 const { spawn } = require('child_process');
 const http = require('http');
+const path = require('path');
 
 //const viteProcess = spawn('node_modules/.bin/vite', ['build', '--watch', '--mode', 'development'], {
 //    stdio: 'inherit',
 //    shell: true,
 //});
 
+/** @type {() => Promise<import('child_process').ChildProcess>} */
 function startViteProcess() {
     return new Promise((resolve, reject) => {
-        const viteProcess = spawn('node_modules/.bin/vite',
-            [  
-                '--strictPort',
-                '--host', '0.0.0.0',
-                '--port', '5070',
-                '--mode', 'development',
-            ], {
-            stdio: 'inherit',
-            shell: true,
-        });
+        const command = {
+            windows: {
+                cmd: '.\\node_modules\\.bin\\vite.cmd',
+                args: [
+                    '--strictPort',
+                    '--host', '0.0.0.0',
+                    '--port', '5070',
+                    '--mode', 'development',
+                ],
+            },
+            posix: {
+                cmd: './node_modules/.bin/vite',
+                args: [
+                    '--strictPort',
+                    '--host', '0.0.0.0',
+                    '--port', '5070',
+                    '--mode', 'development',
+                ],
+            },
+        }
+        const isWindows = process.platform === 'win32';
+        const viteProcess = spawn(
+            isWindows ? command.windows.cmd : command.posix.cmd,
+            isWindows ? command.windows.args : command.posix.args,
+            {
+                stdio: 'inherit',
+                shell: true,
+            }
+        );
 
         viteProcess.on('spawn', () => {
             resolve(viteProcess);
@@ -25,9 +46,10 @@ function startViteProcess() {
     });
 }
 
+/** @type {() => Promise<import('child_process').ChildProcess>} */
 function startBackendProcess() {
     return new Promise((resolve, reject) => {
-        const backendProcess = spawn('python3', ['backend/main.py', '--port', '5080'], {
+        const backendProcess = spawn('python', ['backend/main.py', '--port', '5080'], {
             stdio: 'inherit',
             shell: true,
         });
@@ -47,6 +69,9 @@ const waitForProcess = (process) => {
     });
 };
 
+/**
+ * @returns {Promise<void>}
+ */
 async function checkBackendHealth() {
     return new Promise((resolve, reject) => {
         const options = {
@@ -80,6 +105,10 @@ async function main() {
             await checkBackendHealth();
             break;
         } catch (e) {
+            if (backendProcess.exitCode !== null) {
+                console.log('Backend process has exited');
+                process.exit(1);
+            }
             console.log(`Waiting for backend to start: ${e.message}`);
             await new Promise((resolve) => setTimeout(resolve, 1000));
         }
@@ -92,6 +121,14 @@ async function main() {
         waitForProcess(backendProcess),
         waitForProcess(viteProcess),
     ]);
+
+    // Kill the other process
+    if (backendProcess.exitCode === null) {
+        backendProcess.kill('SIGINT');
+    }
+    if (viteProcess.exitCode === null) {
+        viteProcess.kill('SIGINT');
+    }
 
     console.log('All processes have exited');
     process.exit(0);

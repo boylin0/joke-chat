@@ -7,10 +7,6 @@ llm = None
 def init():
     global llm
 
-    if "GOOGLE_API_KEY" not in os.environ:
-        logging.error("GOOGLE_API_KEY not set.")
-        exit(1)
-
     llm = ChatGoogleGenerativeAI(
         model="gemini-1.5-flash",
         temperature=0,
