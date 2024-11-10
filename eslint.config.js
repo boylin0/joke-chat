@@ -33,6 +33,9 @@ export default [
         'warn',
         { allowConstantExport: true },
       ],
+      // Custom rules
+      'react/jsx-indent': ['error', 2],
+      'react/jsx-indent-props': ['error', 2],
     },
   },
 ]
