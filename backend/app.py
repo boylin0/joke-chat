@@ -6,30 +6,35 @@ import llmlib as llmlib
 
 app = FastAPI()
 
+
 @app.get("/ws")
 async def get():
-    return JSONResponse({"message": "This is a websocket endpoint. You should connect to it using a websocket client."})
+    return JSONResponse(
+        {
+            "message": "This is a websocket endpoint. You should connect to it using a websocket client."
+        }
+    )
+
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    
+
     llm = llmlib.get_llm()
 
     await websocket.accept()
-    
+
     # 預設對話
     chats = [
-        { 
-            "type": "system", 
-            "content": 
-            """
+        {
+            "type": "system",
+            "content": """
             Your name is Funny, you speaks traditional Chinese in Taiwan.
             You are very funny and you like to make jokes.
             every time you speak, you will make a joke.
             you should speak only in traditional Chinese even i ask you in other language.
-            """ 
+            """,
         },
-        { "type": "ai", "content": "問我問題吧！" },
+        {"type": "ai", "content": "問我問題吧！"},
     ]
     await websocket.send_json({"type": "get-chats", "chats": chats})
 
@@ -49,16 +54,20 @@ async def websocket_endpoint(websocket: WebSocket):
 
         if type == "send-message":
             prompt = data["prompt"]
-            chats.append({ "type": "human", "content": prompt })
+            chats.append({"type": "human", "content": prompt})
             await websocket.send_json({"type": "get-chats", "chats": chats})
-            messages = [msg for chat in chats for msg in [(chat["type"], chat["content"])] ]
-            chats.append({ "type": "ai", "content": "" })
+            messages = [
+                msg for chat in chats for msg in [(chat["type"], chat["content"])]
+            ]
+            chats.append({"type": "ai", "content": ""})
             await websocket.send_json({"type": "get-chats", "chats": chats})
             try:
                 async for chunk in llm.astream(messages):
                     logging.info(chunk.content)
                     chats[-1]["content"] += chunk.content
-                    await websocket.send_json({"type": "llm-chunk", "content": chunk.content})
+                    await websocket.send_json(
+                        {"type": "llm-chunk", "content": chunk.content}
+                    )
                 await websocket.send_json({"type": "get-chats", "chats": chats})
             except Exception as e:
                 logging.error(e)
@@ -66,8 +75,9 @@ async def websocket_endpoint(websocket: WebSocket):
             finally:
                 await websocket.send_json({"type": "get-chats", "chats": chats})
 
+
 # serve dist vite project
-#@app.get("/", response_class=HTMLResponse)
-#async def read_root():
+# @app.get("/", response_class=HTMLResponse)
+# async def read_root():
 #    return FileResponse("dist/index.html")
-#app.mount("/", StaticFiles(directory="dist"), name="/")
+# app.mount("/", StaticFiles(directory="dist"), name="/")
