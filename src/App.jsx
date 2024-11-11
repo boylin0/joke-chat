@@ -6,8 +6,17 @@ import {
   CssBaseline,
   Box,
   Typography,
+  Drawer,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  IconButton,
 } from '@mui/material'
 import CircleIcon from '@mui/icons-material/Circle';
+import MenuIcon from '@mui/icons-material/Menu';
+import ChatIcon from '@mui/icons-material/Chat';
+import AddIcon from '@mui/icons-material/Add';
 import { ThemeProvider } from '@mui/material/styles';
 import PropTypes from 'prop-types'
 import muiTheme from './theme';
@@ -117,6 +126,61 @@ Status.propTypes = {
   websocket: PropTypes.instanceOf(WebSocket),
 };
 
+function Sidebar({ chats, onNewChat }) {
+  const [open, setOpen] = useState(false);
+
+  const toggleDrawer = () => {
+    setOpen(!open);
+  };
+
+  return (
+    <>
+      <IconButton
+        onClick={toggleDrawer}
+        sx={{ position: 'fixed', top: 16, left: 16, zIndex: 1200 }}
+      >
+        <MenuIcon />
+      </IconButton>
+      <Drawer
+        anchor="left"
+        open={open}
+        onClose={toggleDrawer}
+      >
+        <Box sx={{ width: 250, pt: 2 }}>
+          <List>
+            <ListItem button onClick={onNewChat}>
+              <ListItemIcon>
+                <AddIcon />
+              </ListItemIcon>
+              <ListItemText primary="New Chat" />
+            </ListItem>
+            {chats.filter(chat => chat.type === 'user').map((chat, index) => (
+              <ListItem button key={index}>
+                <ListItemIcon>
+                  <ChatIcon />
+                </ListItemIcon>
+                <ListItemText 
+                  primary={chat.content.substring(0, 30) + (chat.content.length > 30 ? '...' : '')} 
+                />
+              </ListItem>
+            ))}
+          </List>
+        </Box>
+      </Drawer>
+    </>
+  );
+}
+
+Sidebar.propTypes = {
+  chats: PropTypes.arrayOf(
+    PropTypes.shape({
+      type: PropTypes.string.isRequired,
+      content: PropTypes.string.isRequired,
+    })
+  ).isRequired,
+  onNewChat: PropTypes.func.isRequired,
+};
+
 function App() {
   const [websocket, setWebsocket] = useState(null)
   const [prompt, setPrompt] = useState('')
@@ -175,9 +239,15 @@ function App() {
     )
   }
 
+  const handleNewChat = () => {
+    setChats([]);
+    websocket.send(JSON.stringify({ type: 'clear-chats' }));
+  };
+
   return (
     <ThemeProvider theme={muiTheme}>
       <CssBaseline />
+      <Sidebar chats={chats} onNewChat={handleNewChat} />
       <Container>
         <Typography
           variant="h4"
@@ -193,7 +263,7 @@ function App() {
             WebkitTextFillColor: 'transparent',
           }}
         >
-          AskChat
+          Joke Chat
         </Typography>
         <Status websocket={websocket} />
         <ChatBox chats={chats} />
