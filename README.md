@@ -2,6 +2,8 @@
 
 Joke Chat is a real-time chat application built with React and FastAPI, featuring a fun AI assistant that communicates in Traditional Chinese and loves to tell jokes.
 
+![JokeChat Screenshot](screenshot1.png)
+
 ## Features
 
 - 🤖 Real-time AI chat interface with a humorous personality
