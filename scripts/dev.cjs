@@ -28,7 +28,7 @@ function startViteProcess() {
         }
         const isWindows = process.platform === 'win32';
         const viteProcess = spawn(
-            isWindows ? command.windows.cmd : command.windows.args,
+            isWindows ? command.windows.cmd : command.posix.cmd,
             isWindows ? command.windows.args : command.posix.args,
             {
                 shell: true,
