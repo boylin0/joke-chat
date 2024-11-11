@@ -6,8 +6,17 @@ import {
   CssBaseline,
   Box,
   Typography,
+  Drawer,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  IconButton,
 } from '@mui/material'
 import CircleIcon from '@mui/icons-material/Circle';
+import MenuIcon from '@mui/icons-material/Menu';
+import ChatIcon from '@mui/icons-material/Chat';
+import AddIcon from '@mui/icons-material/Add';
 import { ThemeProvider } from '@mui/material/styles';
 import PropTypes from 'prop-types'
 import muiTheme from './theme';
@@ -38,16 +47,18 @@ ChatBox.propTypes = {
 function PromptInput({ prompt, setPrompt, handleSend, disabled }) {
 
   const handleKeyPress = (event) => {
+    const promptText = event.target.value;
     const isEnter = (event.code === 'Enter' || event.code === 'NumpadEnter');
-    if (isEnter && prompt.trim() === '' && !event.shiftKey) {
+    if (isEnter && promptText.trim() === '' && !event.shiftKey) {
       event.preventDefault();
     }
     if (isEnter && event.shiftKey) {
       return;
     }
-    if (isEnter && !event.shiftKey && !disabled && prompt.trim() !== '') {
-      event.preventDefault();
+    if (isEnter && !event.shiftKey && !disabled && promptText.trim() !== '') {
+      setPrompt('')
       handleSend();
+      event.preventDefault();
     }
   };
 
@@ -69,7 +80,7 @@ function PromptInput({ prompt, setPrompt, handleSend, disabled }) {
           variant="outlined"
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          onKeyDown={handleKeyPress}
+          onKeyDownCapture={handleKeyPress}
           placeholder="Type your message..."
           multiline
           minRows={1}
@@ -115,6 +126,61 @@ Status.propTypes = {
   websocket: PropTypes.instanceOf(WebSocket),
 };
 
+function Sidebar({ chats, onNewChat }) {
+  const [open, setOpen] = useState(false);
+
+  const toggleDrawer = () => {
+    setOpen(!open);
+  };
+
+  return (
+    <>
+      <IconButton
+        onClick={toggleDrawer}
+        sx={{ position: 'fixed', top: 16, left: 16, zIndex: 1200 }}
+      >
+        <MenuIcon />
+      </IconButton>
+      <Drawer
+        anchor="left"
+        open={open}
+        onClose={toggleDrawer}
+      >
+        <Box sx={{ width: 250, pt: 2 }}>
+          <List>
+            <ListItem button onClick={onNewChat}>
+              <ListItemIcon>
+                <AddIcon />
+              </ListItemIcon>
+              <ListItemText primary="New Chat" />
+            </ListItem>
+            {chats.filter(chat => chat.type === 'user').map((chat, index) => (
+              <ListItem button key={index}>
+                <ListItemIcon>
+                  <ChatIcon />
+                </ListItemIcon>
+                <ListItemText 
+                  primary={chat.content.substring(0, 30) + (chat.content.length > 30 ? '...' : '')} 
+                />
+              </ListItem>
+            ))}
+          </List>
+        </Box>
+      </Drawer>
+    </>
+  );
+}
+
+Sidebar.propTypes = {
+  chats: PropTypes.arrayOf(
+    PropTypes.shape({
+      type: PropTypes.string.isRequired,
+      content: PropTypes.string.isRequired,
+    })
+  ).isRequired,
+  onNewChat: PropTypes.func.isRequired,
+};
+
 function App() {
   const [websocket, setWebsocket] = useState(null)
   const [prompt, setPrompt] = useState('')
@@ -148,7 +214,6 @@ function App() {
       if (type === 'get-chats') {
         g_chats = data.chats
         setChats(data.chats)
-        window.scrollTo(0, document.body.scrollHeight, { behavior: 'smooth' })
       } else if (type === 'llm-chunk') {
         const content = data.content
         let newChats = [...g_chats]
@@ -160,22 +225,29 @@ function App() {
         }
         g_chats = newChats
         setChats(newChats)
-        // scroll to bottom
-        window.scrollTo(0, document.body.scrollHeight, { behavior: 'smooth' })
       }
     }
   }
 
+  useEffect(() => {
+    window.scrollTo(0, document.body.scrollHeight, { behavior: 'smooth' })
+  }, [chats])
+
   const handleSend = () => {
-    setPrompt('')
     websocket.send(
       JSON.stringify({ type: 'send-message', prompt: prompt })
     )
   }
 
+  const handleNewChat = () => {
+    setChats([]);
+    websocket.send(JSON.stringify({ type: 'clear-chats' }));
+  };
+
   return (
     <ThemeProvider theme={muiTheme}>
       <CssBaseline />
+      <Sidebar chats={chats} onNewChat={handleNewChat} />
       <Container>
         <Typography
           variant="h4"
@@ -191,7 +263,7 @@ function App() {
             WebkitTextFillColor: 'transparent',
           }}
         >
-          AskChat
+          Joke Chat
         </Typography>
         <Status websocket={websocket} />
         <ChatBox chats={chats} />

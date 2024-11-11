@@ -1,11 +1,7 @@
 const { spawn } = require('child_process');
 const http = require('http');
 const path = require('path');
-
-//const viteProcess = spawn('node_modules/.bin/vite', ['build', '--watch', '--mode', 'development'], {
-//    stdio: 'inherit',
-//    shell: true,
-//});
+const { watch } = require('fs');
 
 /** @type {() => Promise<import('child_process').ChildProcess>} */
 function startViteProcess() {
@@ -32,13 +28,16 @@ function startViteProcess() {
         }
         const isWindows = process.platform === 'win32';
         const viteProcess = spawn(
-            isWindows ? command.windows.cmd : command.posix.cmd,
+            isWindows ? command.windows.cmd : command.windows.args,
             isWindows ? command.windows.args : command.posix.args,
             {
-                stdio: 'inherit',
                 shell: true,
             }
         );
+
+        viteProcess.stdout.on('data', (data) => {
+            console.log(data.toString());
+        });
 
         viteProcess.on('spawn', () => {
             resolve(viteProcess);
@@ -50,8 +49,10 @@ function startViteProcess() {
 function startBackendProcess() {
     return new Promise((resolve, reject) => {
         const backendProcess = spawn('python', ['backend/main.py', '--port', '5080'], {
-            stdio: 'inherit',
-            shell: true,
+        });
+
+        backendProcess.stdout.on('data', (data) => {
+            console.log(data.toString());
         });
 
         backendProcess.on('spawn', () => {
@@ -98,42 +99,58 @@ async function checkBackendHealth() {
 }
 
 async function main() {
-    // Start the backend process and wait for it to be ready
-    const backendProcess = await startBackendProcess();
+    // Start the vite process for development
+    let viteProcess = await startViteProcess();
+    let backendProcess = await startBackendProcess();
     while (true) {
         try {
             await checkBackendHealth();
             break;
         } catch (e) {
-            if (backendProcess.exitCode !== null) {
-                console.log('Backend process has exited');
-                process.exit(1);
-            }
             console.log(`Waiting for backend to start: ${e.message}`);
             await new Promise((resolve) => setTimeout(resolve, 1000));
         }
     }
-    // Start the vite process for development
-    const viteProcess = await startViteProcess();
 
-    // Wait for any of the processes to exit
-    await Promise.race([
-        waitForProcess(backendProcess),
-        waitForProcess(viteProcess),
-    ]);
+    // Watch backend directory for changes
+    watch(path.resolve(__dirname, '../backend'), { recursive: true }, async (eventType, filename) => {
+        if (eventType === 'change' && filename.endsWith('.py')) {
+            console.log(`Python file changed: ${filename}`);
 
-    // Kill the other process
-    if (backendProcess.exitCode === null) {
-        backendProcess.kill('SIGINT');
-    }
-    if (viteProcess.exitCode === null) {
-        viteProcess.kill('SIGINT');
-    }
+            // Kill existing backend process
+            if (backendProcess) {
+                backendProcess.kill();
+                console.log('Restarting backend process')
+            }
 
-    console.log('All processes have exited');
-    process.exit(0);
+            // Start new backend process
+            try {
+                backendProcess = await startBackendProcess();
+                while (true) {
+                    try {
+                        await checkBackendHealth();
+                        break;
+                    } catch (e) {
+                        console.log(`Waiting for backend to start: ${e.message}`);
+                        await new Promise((resolve) => setTimeout(resolve, 1000));
+                    }
+                }
+                console.log('Started new backend process');
+            } catch (error) {
+                console.error('Failed to start backend process:', error);
+            }
+        }
+    });
+
 }
 
-main()
+// Handle process termination
+process.on('SIGINT', () => {
+    console.log('Received SIGINT. Cleaning up...');
+    process.exit(0);
+});
 
-
+main().catch(error => {
+    console.error('Error in main:', error);
+    process.exit(1);
+});
